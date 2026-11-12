@@ -1,4 +1,3 @@
 package model;
 
-// Em que tela/momento o jogo está.
-public enum GameState { MENU, PLAYING, PAUSED, LEVEL_CLEAR, GAME_OVER, VICTORY }
+public enum GameState { MENU, LEVEL_SELECT, OPTIONS, PLAYING, PAUSED, LEVEL_CLEAR, GAME_OVER, VICTORY }

@@ -4,23 +4,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.prefs.Preferences;
 
-// MODEL: guarda todo o estado do jogo e aplica as regras.
-// Não sabe nada de Swing, teclado ou desenho.
 public class GameModel {
     public static final int WIDTH = 800, HEIGHT = 600, HUD_HEIGHT = 40;
 
-    // Itens do menu inicial
-    public static final int MENU_PLAY = 0, MENU_LEVEL = 1, MENU_DIFFICULTY = 2, MENU_EXIT = 3, MENU_SIZE = 4;
+    public static final int MENU_PLAY = 0, MENU_OPTIONS = 1, MENU_EXIT = 2, MENU_SIZE = 3;
 
-    // Dificuldade = velocidade base da bola (cada fase ainda soma +1)
+    public static final int LEVEL_GRID_COLUMNS = 5;
+
     public static final String[] DIFFICULTY_NAMES = {"FÁCIL", "MÉDIO", "DIFÍCIL"};
     private static final double[] DIFFICULTY_SPEEDS = {5, 6.5, 8};
     private static final int START_LIVES = 3;
-    private static final int MAX_BALLS = 15; // limite para o x3 não multiplicar sem fim
+    private static final int MAX_BALLS = 15;
+
+    private static final Preferences PREFS = Preferences.userNodeForPackage(GameModel.class);
+    private static final String PREF_LEVELS_CLEARED = "levelsCleared";
 
     private GameState state = GameState.MENU;
-    private int menuIndex, startLevel, difficulty;
+    private int menuIndex, selectedLevel, difficulty;
+    private int levelsCleared = Math.min(PREFS.getInt(PREF_LEVELS_CLEARED, 0), Levels.count());
 
     private Paddle paddle;
     private List<Ball> balls = new ArrayList<>();
@@ -29,21 +32,50 @@ public class GameModel {
     private boolean ballOnPaddle;
     private int score, highScore, lives, level;
 
-    // ---------- Menu ----------
-
     public void moveMenuSelection(int delta) {
         menuIndex = Math.floorMod(menuIndex + delta, MENU_SIZE);
     }
 
-    // Esquerda/direita mudam a fase inicial ou a dificuldade, conforme o item selecionado.
-    public void changeMenuOption(int delta) {
-        if (menuIndex == MENU_LEVEL) startLevel = Math.floorMod(startLevel + delta, Levels.count());
-        if (menuIndex == MENU_DIFFICULTY) difficulty = Math.floorMod(difficulty + delta, DIFFICULTY_NAMES.length);
+    public void openOptions() { state = GameState.OPTIONS; }
+    public void closeOptions() { state = GameState.MENU; }
+
+    public void changeDifficulty(int delta) {
+        difficulty = Math.floorMod(difficulty + delta, DIFFICULTY_NAMES.length);
     }
 
-    // ---------- Fluxo da partida ----------
+    public void openLevelSelect() {
+        selectedLevel = Math.min(levelsCleared, Levels.count() - 1);
+        state = GameState.LEVEL_SELECT;
+    }
 
-    public void newGame() {
+    public void closeLevelSelect() {
+        state = GameState.MENU;
+    }
+
+    public void moveLevelSelection(int delta) {
+        int target = selectedLevel + delta;
+        if (target >= 0 && target < Levels.count()) selectedLevel = target;
+    }
+
+    public void startSelectedLevel() {
+        if (isLevelUnlocked(selectedLevel)) newGame(selectedLevel);
+    }
+
+    public boolean isLevelUnlocked(int index) {
+        return index <= levelsCleared;
+    }
+
+    public boolean isLevelCompleted(int index) {
+        return index < levelsCleared;
+    }
+
+    private void markLevelCleared(int index) {
+        if (index + 1 <= levelsCleared) return;
+        levelsCleared = index + 1;
+        PREFS.putInt(PREF_LEVELS_CLEARED, levelsCleared);
+    }
+
+    private void newGame(int startLevel) {
         score = 0;
         lives = START_LIVES;
         level = startLevel;
@@ -70,20 +102,19 @@ public class GameModel {
     private void resetBall() {
         balls = new ArrayList<>();
         balls.add(new Ball(0, 0, ballSpeed()));
+        balls.get(0).stickTo(paddle);
         capsules = new ArrayList<>();
         ballOnPaddle = true;
     }
 
     private double ballSpeed() {
-        return DIFFICULTY_SPEEDS[difficulty] + level; // cada fase deixa a bola mais rápida
+        return DIFFICULTY_SPEEDS[difficulty] + level;
     }
 
     private void endGame(GameState finalState) {
         highScore = Math.max(highScore, score);
         state = finalState;
     }
-
-    // ---------- Atualização (um quadro do jogo) ----------
 
     public void update(boolean left, boolean right) {
         paddle.move(left, right, WIDTH);
@@ -98,7 +129,7 @@ public class GameModel {
             Ball ball = it.next();
             ball.move();
             if (ball.bounceOffWalls(HUD_HEIGHT, WIDTH, HEIGHT)) {
-                it.remove(); // caiu: some do jogo
+                it.remove();
                 continue;
             }
             if (ball.isFalling() && ball.collidesWith(paddle)) {
@@ -109,7 +140,6 @@ public class GameModel {
 
         updateCapsules();
 
-        // Só perde vida quando TODAS as bolas caírem
         if (balls.isEmpty()) {
             lives--;
             if (lives == 0) endGame(GameState.GAME_OVER);
@@ -117,8 +147,8 @@ public class GameModel {
             return;
         }
 
-        // Barreiras não contam: a fase acaba quando não sobra tijolo quebrável
         if (bricks.stream().noneMatch(Brick::isBreakable)) {
+            markLevelCleared(level);
             level++;
             if (level == Levels.count()) endGame(GameState.VICTORY);
             else state = GameState.LEVEL_CLEAR;
@@ -137,12 +167,11 @@ public class GameModel {
                     if (brick.getType() == Brick.Type.MULTIBALL) capsules.add(new Capsule(brick.centerX(), brick.y, Capsule.Power.EXTRA_BALLS));
                     if (brick.getType() == Brick.Type.SPLIT) capsules.add(new Capsule(brick.centerX(), brick.y, Capsule.Power.SPLIT));
                 }
-                return; // um tijolo por quadro evita quiques duplos
+                return;
             }
         }
     }
 
-    // Cápsulas caem; se a raquete pegar, ativa o poder. Se cair no fundo, perdeu.
     private void updateCapsules() {
         Iterator<Capsule> it = capsules.iterator();
         while (it.hasNext()) {
@@ -159,7 +188,6 @@ public class GameModel {
         }
     }
 
-    // Solta duas bolas novas de cima da raquete.
     private void spawnExtraBalls() {
         for (int angle : new int[] {-35, 35}) {
             if (balls.size() >= MAX_BALLS) return;
@@ -169,7 +197,6 @@ public class GameModel {
         }
     }
 
-    // Cada bola em jogo vira 3, no lugar onde ela está.
     private void splitBalls() {
         List<Ball> copies = new ArrayList<>();
         for (Ball ball : balls) copies.addAll(ball.split());
@@ -179,11 +206,11 @@ public class GameModel {
         }
     }
 
-    // ---------- Leitura do estado (usada pela View e pelo Controller) ----------
-
     public GameState getState() { return state; }
     public int getMenuIndex() { return menuIndex; }
-    public int getStartLevel() { return startLevel; }
+    public int getSelectedLevel() { return selectedLevel; }
+    public int getLevelCount() { return Levels.count(); }
+    public int getDifficulty() { return difficulty; }
     public String getDifficultyName() { return DIFFICULTY_NAMES[difficulty]; }
     public Paddle getPaddle() { return paddle; }
     public List<Ball> getBalls() { return Collections.unmodifiableList(balls); }

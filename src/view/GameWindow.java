@@ -2,8 +2,8 @@ package view;
 
 import javax.swing.JFrame;
 
-// VIEW: a janela do jogo, que mostra o painel GameView.
 public class GameWindow extends JFrame {
+    private static final long serialVersionUID = 1L;
 
     public GameWindow(GameView view) {
         super("Arkanoid");
@@ -13,6 +13,6 @@ public class GameWindow extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
-        view.requestFocusInWindow(); // o painel precisa do foco para receber o teclado
+        view.requestFocusInWindow();
     }
 }

@@ -1,7 +1,5 @@
 package model;
 
-// Tijolo: pode precisar de mais de um golpe, ser uma barreira indestrutível
-// ou soltar uma cápsula de poder quando quebrado.
 public class Brick extends GameObject {
     public enum Type { NORMAL, BARRIER, MULTIBALL, SPLIT }
 
@@ -20,7 +18,6 @@ public class Brick extends GameObject {
         this.type = type;
     }
 
-    // Leva um golpe e devolve os pontos ganhos. Barreiras não sofrem dano.
     public int hit() {
         if (!isBreakable()) return 0;
         hits--;

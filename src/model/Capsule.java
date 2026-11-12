@@ -1,8 +1,6 @@
 package model;
 
-// Cápsula de poder: cai de um tijolo especial. Se a raquete pegar, ativa o poder.
 public class Capsule extends GameObject {
-    // EXTRA_BALLS = +2 bolas saindo da raquete | SPLIT = cada bola vira 3 onde está
     public enum Power { EXTRA_BALLS, SPLIT }
 
     private static final double FALL_SPEED = 3;

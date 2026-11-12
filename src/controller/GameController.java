@@ -10,12 +10,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-// CONTROLLER: recebe os eventos (teclado e Timer), manda o Model agir
-// e pede para a View redesenhar.
 public class GameController implements KeyListener, ActionListener {
     private final GameModel model;
     private final GameView view;
-    private final Timer timer = new Timer(16, this); // ~60 FPS
+    private final Timer timer = new Timer(16, this);
     private boolean left, right;
 
     public GameController(GameModel model, GameView view) {
@@ -28,7 +26,6 @@ public class GameController implements KeyListener, ActionListener {
         timer.start();
     }
 
-    // Cada "tique" do Timer = um quadro do jogo.
     @Override
     public void actionPerformed(ActionEvent e) {
         if (model.getState() == GameState.PLAYING) model.update(left, right);
@@ -49,13 +46,25 @@ public class GameController implements KeyListener, ActionListener {
             case MENU -> {
                 if (up) model.moveMenuSelection(-1);
                 if (down) model.moveMenuSelection(1);
-                if (leftKey) model.changeMenuOption(-1);
-                if (rightKey) model.changeMenuOption(1);
                 if (confirm) {
+                    if (model.getMenuIndex() == GameModel.MENU_PLAY) model.openLevelSelect();
+                    if (model.getMenuIndex() == GameModel.MENU_OPTIONS) model.openOptions();
                     if (model.getMenuIndex() == GameModel.MENU_EXIT) System.exit(0);
-                    else model.newGame();
                 }
                 if (escape) System.exit(0);
+            }
+            case OPTIONS -> {
+                if (leftKey) model.changeDifficulty(-1);
+                if (rightKey) model.changeDifficulty(1);
+                if (confirm || escape) model.closeOptions();
+            }
+            case LEVEL_SELECT -> {
+                if (leftKey) model.moveLevelSelection(-1);
+                if (rightKey) model.moveLevelSelection(1);
+                if (up) model.moveLevelSelection(-GameModel.LEVEL_GRID_COLUMNS);
+                if (down) model.moveLevelSelection(GameModel.LEVEL_GRID_COLUMNS);
+                if (confirm) model.startSelectedLevel();
+                if (escape) model.closeLevelSelect();
             }
             case PLAYING -> {
                 if (leftKey) left = true;
@@ -69,6 +78,7 @@ public class GameController implements KeyListener, ActionListener {
             }
             case LEVEL_CLEAR -> {
                 if (confirm) model.loadLevel();
+                if (escape) model.backToMenu();
             }
             case GAME_OVER, VICTORY -> {
                 if (confirm || escape) model.backToMenu();

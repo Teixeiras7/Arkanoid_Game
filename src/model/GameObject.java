@@ -2,7 +2,6 @@ package model;
 
 import java.awt.geom.Rectangle2D;
 
-// Base de tudo que existe no jogo: posição, tamanho e caixa de colisão.
 public abstract class GameObject {
     protected double x, y, width, height;
 

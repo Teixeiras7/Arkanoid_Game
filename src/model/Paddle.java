@@ -1,6 +1,5 @@
 package model;
 
-// A raquete controlada pelo jogador.
 public class Paddle extends GameObject {
     private static final double SPEED = 8;
 

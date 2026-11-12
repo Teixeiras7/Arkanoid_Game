@@ -3,12 +3,7 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 
-// Mapas das fases.
-//   '1'..'3' = tijolo que aguenta esse número de golpes
-//   '*'      = tijolo multibola (solta a cápsula +2)
-//   '%'      = tijolo divisor (solta a cápsula x3: cada bola vira 3)
-//   '#'      = barreira indestrutível
-//   '.'      = vazio
+// 1-3 = golpes, * = cápsula +2, % = cápsula x3, # = barreira, . = vazio
 public class Levels {
     private static final String[][] MAPS = {
         {
@@ -23,16 +18,16 @@ public class Levels {
             "1111111111",
             "2222222222",
             "..........",
-            "##.####.##", // só duas passagens: precisa mirar
+            "##.####.##",
         },
         {
             "3333333333",
             "#2*2222%2#",
             "#11111111#",
             "#11111111#",
-            "###.##.###", // duas passagens estreitas...
+            "###.##.###",
             "..........",
-            "..##..##..", // ...e uma segunda camada desencontrada: só entra de lado
+            "..##..##..",
         },
     };
 

@@ -7,7 +7,6 @@ import view.GameWindow;
 
 import javax.swing.SwingUtilities;
 
-// Ponto de entrada: monta o MVC (Model, View e Controller) e inicia o jogo.
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
