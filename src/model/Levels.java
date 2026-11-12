@@ -31,7 +31,7 @@ public class Levels {
         },
     };
 
-    private static final int GAP = 4, TOP = 80;
+    private static final int GAP = Brick.GAP, TOP = 80;
 
     public static int count() {
         return MAPS.length;

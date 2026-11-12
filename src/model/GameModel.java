@@ -127,15 +127,13 @@ public class GameModel {
         Iterator<Ball> it = balls.iterator();
         while (it.hasNext()) {
             Ball ball = it.next();
-            ball.move();
-            if (ball.bounceOffWalls(HUD_HEIGHT, WIDTH, HEIGHT)) {
+            if (moveBall(ball)) {
                 it.remove();
                 continue;
             }
             if (ball.isFalling() && ball.collidesWith(paddle)) {
                 ball.bounceOffPaddle(paddle);
             }
-            checkBrickCollisions(ball);
         }
 
         updateCapsules();
@@ -155,20 +153,39 @@ public class GameModel {
         }
     }
 
-    private void checkBrickCollisions(Ball ball) {
-        Iterator<Brick> it = bricks.iterator();
-        while (it.hasNext()) {
-            Brick brick = it.next();
-            if (ball.collidesWith(brick)) {
-                ball.bounceOffBrick(brick);
-                score += brick.hit();
-                if (brick.isDestroyed()) {
-                    it.remove();
-                    if (brick.getType() == Brick.Type.MULTIBALL) capsules.add(new Capsule(brick.centerX(), brick.y, Capsule.Power.EXTRA_BALLS));
-                    if (brick.getType() == Brick.Type.SPLIT) capsules.add(new Capsule(brick.centerX(), brick.y, Capsule.Power.SPLIT));
-                }
-                return;
+    // Move a bolinha em passos pequenos, um eixo por vez. Retorna true se ela caiu da tela.
+    private boolean moveBall(Ball ball) {
+        int steps = ball.steps();
+        for (int i = 0; i < steps; i++) {
+            ball.moveX(1.0 / steps);
+            checkBrickCollisions(ball, true);
+            ball.moveY(1.0 / steps);
+            checkBrickCollisions(ball, false);
+            if (ball.bounceOffWalls(HUD_HEIGHT, WIDTH, HEIGHT)) return true;
+        }
+        return false;
+    }
+
+    private void checkBrickCollisions(Ball ball, boolean horizontal) {
+        Brick hit = null;
+        double best = 0;
+        for (Brick brick : bricks) {
+            double area = ball.overlapArea(brick);
+            if (area > best) {
+                best = area;
+                hit = brick;
             }
+        }
+        if (hit == null) return;
+
+        if (horizontal) ball.bounceOffBrickX(hit);
+        else ball.bounceOffBrickY(hit);
+
+        score += hit.hit();
+        if (hit.isDestroyed()) {
+            bricks.remove(hit);
+            if (hit.getType() == Brick.Type.MULTIBALL) capsules.add(new Capsule(hit.centerX(), hit.y, Capsule.Power.EXTRA_BALLS));
+            if (hit.getType() == Brick.Type.SPLIT) capsules.add(new Capsule(hit.centerX(), hit.y, Capsule.Power.SPLIT));
         }
     }
 

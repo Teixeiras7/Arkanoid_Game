@@ -21,9 +21,19 @@ public class Ball extends GameObject {
         dy = -speed * Math.cos(angle);
     }
 
-    public void move() {
-        x += dx;
-        y += dy;
+    private static final double MAX_STEP = 4;
+
+    // Quantidade de passos pequenos em que o movimento de um quadro é dividido (evita atravessar tijolos)
+    public int steps() {
+        return (int) Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / MAX_STEP));
+    }
+
+    public void moveX(double fraction) {
+        x += dx * fraction;
+    }
+
+    public void moveY(double fraction) {
+        y += dy * fraction;
     }
 
     public void stickTo(Paddle paddle) {
@@ -46,15 +56,24 @@ public class Ball extends GameObject {
         y = paddle.y - height;
     }
 
-    public void bounceOffBrick(Brick brick) {
+    // Área da sobreposição entre a bolinha e um tijolo (0 se não houver colisão)
+    public double overlapArea(Brick brick) {
         Rectangle2D overlap = getBounds().createIntersection(brick.getBounds());
-        if (overlap.getWidth() < overlap.getHeight()) {
-            dx = -dx;
-            x += Math.signum(dx) * overlap.getWidth();
-        } else {
-            dy = -dy;
-            y += Math.signum(dy) * overlap.getHeight();
-        }
+        return overlap.getWidth() > 0 && overlap.getHeight() > 0 ? overlap.getWidth() * overlap.getHeight() : 0;
+    }
+
+    // Colisão horizontal: empurra a bolinha para fora do lado de onde ela veio
+    public void bounceOffBrickX(Brick brick) {
+        Rectangle2D b = brick.getBounds();
+        x = dx > 0 ? b.getMinX() - width : b.getMaxX();
+        dx = -dx;
+    }
+
+    // Colisão vertical: empurra a bolinha para fora do lado de onde ela veio
+    public void bounceOffBrickY(Brick brick) {
+        Rectangle2D b = brick.getBounds();
+        y = dy > 0 ? b.getMinY() - height : b.getMaxY();
+        dy = -dy;
     }
 
     public List<Ball> split() {
